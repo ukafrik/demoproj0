@@ -10,6 +10,200 @@ public class Demoproj0Application {
 		SpringApplication.run(Demoproj0Application.class, args);
 	}
 }
+/////DemoTessOPCV.java
+package com.example.demo;
+
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfByte;
+import org.opencv.core.MatOfPoint;
+import org.opencv.core.MatOfPoint2f;
+import org.opencv.core.RotatedRect;
+import org.opencv.core.Size;
+import org.opencv.highgui.HighGui;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.imgproc.Imgproc;
+
+import com.recognition.software.jdeskew.ImageDeskew;
+import com.recognition.software.jdeskew.ImageUtil;
+
+public class DemoTessOpCV {
+	
+	public static void main(String[] args) {
+		// Load the native library.
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		
+		try {
+			new DemoTessOpCV().run();
+		}
+		catch (Exception ex) {
+			ex.printStackTrace();
+		}
+	}
+	
+	public void run() throws Exception {
+		String inFile = "/home/ubuntumac1/DevArea/Workspace/simRel-2018-09/demoTessJ4/test-data/eurotext_deskew.png";
+        Mat src = Imgcodecs.imread(inFile);
+        if (src.empty()) {
+            System.err.println("Cannot read image: " + inFile);
+            System.exit(0);
+        }
+        Mat srcClone = src.clone();
+        System.out.println("Src.size [" + src.size() +"]");
+                
+        srcClone = this.rotate1(srcClone);
+		showWaitDestroy("deskewed", srcClone);
+		
+		// Transform source image to gray if it is not already
+		Mat gray = new Mat();
+		if (src.channels() == 3) {
+			Imgproc.cvtColor(src, gray, Imgproc.COLOR_BGR2GRAY);
+		} 
+		else {
+			gray = src;
+		}
+		// Show gray image
+		showWaitDestroy("gray", gray);
+		
+		// Apply adaptiveThreshold at the bitwise_not of gray
+		Mat bw = new Mat();
+		Core.bitwise_not(gray, gray);
+		Imgproc.adaptiveThreshold(gray, bw, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 15, -2);
+		// Show binary image
+		showWaitDestroy("binary", bw);
+		
+		// Create the images that will use to extract the horizontal and vertical lines
+		Mat horizontal = bw.clone();
+		Mat vertical = bw.clone();
+		// Specify size on horizontal axis
+		int horizontal_size = horizontal.cols() / 30;
+		// Create structure element for extracting horizontal lines through morphology
+		// operations
+		Mat horizontalStructure = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(horizontal_size, 1));
+		// Apply morphology operations
+		Imgproc.erode(horizontal, horizontal, horizontalStructure);
+		Imgproc.dilate(horizontal, horizontal, horizontalStructure);
+		// Show extracted horizontal lines
+		showWaitDestroy("horizontal", horizontal);
+		
+		// Specify size on vertical axis
+		int vertical_size = vertical.rows() / 30;
+		// Create structure element for extracting vertical lines through morphology
+		// operations
+		Mat verticalStructure = Imgproc.getStructuringElement(Imgproc.MORPH_RECT, new Size(1, vertical_size));
+		// Apply morphology operations
+		Imgproc.erode(vertical, vertical, verticalStructure);
+		Imgproc.dilate(vertical, vertical, verticalStructure);
+		// Show extracted vertical lines
+		showWaitDestroy("vertical", vertical);
+		
+		// Inverse vertical image
+		Core.bitwise_not(vertical, vertical);
+		showWaitDestroy("vertical_bit", vertical);
+		
+		// Extract edges and smooth image according to the logic
+		// 1. extract edges
+		// 2. dilate(edges)
+		// 3. src.copyTo(smooth)
+		// 4. blur smooth img
+		// 5. smooth.copyTo(src, edges)
+		// Step 1
+		Mat edges = new Mat();
+		Imgproc.adaptiveThreshold(vertical, edges, 255, Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.THRESH_BINARY, 3, -2);
+		showWaitDestroy("edges", edges);
+		
+		// Step 2
+		Mat kernel = Mat.ones(2, 2, CvType.CV_8UC1);
+		Imgproc.dilate(edges, edges, kernel);
+		showWaitDestroy("dilate", edges);
+		
+		// Step 3
+		Mat smooth = new Mat();
+		vertical.copyTo(smooth);
+		
+		// Step 4
+		Imgproc.blur(smooth, smooth, new Size(2, 2));
+		
+		// Step 5
+		smooth.copyTo(vertical, edges);
+		
+		// Show final result
+		showWaitDestroy("smooth - final", vertical);
+		System.exit(0);
+	}
+	
+	private Mat rotate1(Mat src) throws Exception {
+		double skewAngle = this.getSkewAngle(src, "png");
+		System.out.println("SkewAngle [" + skewAngle + "]");
+		Mat src_gray = new Mat();
+		Imgproc.cvtColor(src, src_gray, Imgproc.COLOR_BGR2GRAY);
+		showWaitDestroy("dilate", src_gray);
+
+		Mat output = new Mat();
+		Core.bitwise_not(src_gray, output);
+		showWaitDestroy("dilate", output);
+
+		Mat points = Mat.zeros(output.size(), output.type());
+		Core.findNonZero(output, points);
+
+		MatOfPoint mpoints = new MatOfPoint(points);
+		MatOfPoint2f points2f = new MatOfPoint2f(mpoints.toArray());
+		RotatedRect box = Imgproc.minAreaRect(points2f);
+
+		Mat src_squares = src.clone();
+		// double skewAngle = this.getSkewAngle(src);
+		Mat rot_mat = Imgproc.getRotationMatrix2D(box.center, skewAngle, 1);
+		Mat rotated = new Mat();
+		Imgproc.warpAffine(src_squares, rotated, rot_mat, src_squares.size(), Imgproc.INTER_CUBIC);
+
+		Mat cropped = new Mat();
+		Imgproc.getRectSubPix(rotated, box.size, box.center, cropped);
+
+		showWaitDestroy("cropped", cropped);
+
+		return cropped;
+	}
+	private double getSkewAngle(Mat srcMat, String imgExt) throws IOException {
+		double skewThreshold = 0.05;
+		
+		//Mat to BufferedImage
+		MatOfByte matOfByte = new MatOfByte();
+		Imgcodecs.imencode("." + imgExt, srcMat, matOfByte);
+		byte[] byteAry = matOfByte.toArray();
+		
+		BufferedImage bufImg = ImageIO.read(new ByteArrayInputStream(byteAry));
+		
+		//Use Tess4J to de-skew image...
+		ImageDeskew imgDeSkew = new ImageDeskew(bufImg);
+		double skewAngle = imgDeSkew.getSkewAngle();
+		System.out.println("Skew-angle: [" + skewAngle + "]");
+		
+		System.out.println("B4 Rotation Deskewed Size: [" + bufImg.getWidth() + "X" + bufImg.getHeight() + "]");
+		if (skewAngle > skewThreshold || skewAngle > -skewThreshold) {
+			bufImg = ImageUtil.rotate(bufImg, -skewAngle, bufImg.getWidth()/2, bufImg.getHeight()/2);
+		}
+	
+		return skewAngle;
+	}
+	
+	private void showWaitDestroy(String winname, Mat img) {
+		HighGui.imshow(winname, img);
+		HighGui.moveWindow(winname, 500, 0);
+		HighGui.waitKey(5000);
+		HighGui.destroyWindow(winname);
+	}
+	
+
+}
+
+
 
 ///////////New attempt:
 package com.example.demo;
