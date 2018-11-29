@@ -10,6 +10,7 @@ import java.util.stream.IntStream;
 
 public class DemoAsyncProc {
 
+	//Runtime.getRuntime().availableProcessors(); //This returns count of CPUs!
 	public static void main(String[] args) {
 		List<MyTask> tasks = IntStream
 								.range(0, 10)
