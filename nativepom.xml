@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>com.example</groupId>
+	<artifactId>demoTess4JOpenCV</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+
+	<name>demoTess4JOpenCV</name>
+	<description>Demo project for Spring Boot</description>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>2.0.5.RELEASE</version>
+		<relativePath /> <!-- lookup parent from repository -->
+	</parent>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<java.version>1.8</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.sourceforge.tess4j</groupId>
+			<artifactId>tess4j</artifactId>
+			<version>4.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>1.19</version>
+		</dependency>
+		<dependency>
+			<groupId>net.java.dev.jna</groupId>
+			<artifactId>jna</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox-tools</artifactId>
+			<version>2.0.12</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bytedeco.javacpp-presets</groupId>
+			<artifactId>tesseract-platform</artifactId>
+			<version>3.05.01-1.4.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bytedeco.javacpp-presets</groupId>
+			<artifactId>opencv-platform</artifactId>
+			<version>3.4.2-1.4.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openpnp</groupId>
+			<artifactId>opencv</artifactId>
+			<version>3.2.0-1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.itextpdf</groupId>
+			<artifactId>itextpdf</artifactId>
+			<version>5.5.13</version>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>
+<!-- 						-Djava.library.path=${project.build.directory}/classes/lib/org/bytedeco/javacpp/${build.type} -->
+<!-- 						-DLD_LIBRARY_PATH=${project.build.directory}/classes/lib/org/bytedeco/javacpp/${build.type} -->
+						-Djava.library.path=/Users/jonathans-imac/Workspace/SimRel-2018-09/demoTess4JOpenCV/tessNativeLibs/Lib2
+						-DLD_LIBRARY_PATH=/Users/jonathans-imac/Workspace/SimRel-2018-09/demoTess4JOpenCV/tessNativeLibs/Lib2
+					</jvmArguments>
+				</configuration>
+			</plugin>
+<!-- 			<plugin> -->
+<!-- 				<artifactId>maven-compiler-plugin</artifactId> -->
+<!-- 				<configuration> -->
+<!-- 					<source>1.8</source> -->
+<!-- 					<target>1.8</target> -->
+<!-- 				</configuration> -->
+<!-- 			</plugin> -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<systemProperties>
+						<property>
+							<name>java.library.path</name>
+<!-- 							<value>target/classes/lib/org/bytedeco/javacpp/${build.type}</value> -->
+							<value>/Users/jonathans-imac/Workspace/SimRel-2018-09/demoTess4JOpenCV/tessNativeLibs/Lib2</value>
+						</property>
+					</systemProperties>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-dependency-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>unpack</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>unpack</goal>
+						</goals>
+						<configuration>
+							<artifactItems>
+								<artifactItem>
+									<groupId>org.bytedeco.javacpp-presets</groupId>
+									<artifactId>tesseract</artifactId>
+									<version>3.05.01-1.4.1</version>
+									<classifier>${build.type}</classifier>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+<!-- 									<outputDirectory>${project.build.directory}/classes/lib</outputDirectory> -->
+									<outputDirectory>/Users/jonathans-imac/Workspace/SimRel-2018-09/demoTess4JOpenCV/tessNativeLibs/Lib2</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>org.bytedeco.javacpp-presets</groupId>
+									<artifactId>leptonica</artifactId>
+									<version>1.74.4-1.4</version>
+									<classifier>${build.type}</classifier>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+<!-- 									<outputDirectory>${project.build.directory}/classes/lib</outputDirectory> -->
+									<outputDirectory>/Users/jonathans-imac/Workspace/SimRel-2018-09/demoTess4JOpenCV/tessNativeLibs/Lib2</outputDirectory>
+								</artifactItem>
+								<artifactItem>
+									<groupId>org.bytedeco.javacpp-presets</groupId>
+									<artifactId>opencv</artifactId>
+									<version>3.4.2-1.4.2</version>
+									<classifier>${build.type}</classifier>
+									<type>jar</type>
+									<overWrite>true</overWrite>
+<!-- 									<outputDirectory>${project.build.directory}/classes/lib</outputDirectory> -->
+									<outputDirectory>/Users/jonathans-imac/Workspace/SimRel-2018-09/demoTess4JOpenCV/tessNativeLibs/Lib2</outputDirectory>
+								</artifactItem>
+							</artifactItems>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+		</plugins>
+	</build>
+
+	<!-- Build Type -->
+	<profiles>
+		<profile>
+			<id>linux-x86_64</id>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<properties>
+				<build.type>linux-x86_64</build.type>
+			</properties>
+		</profile>
+		<profile>
+			<id>macosx-x86_64</id>
+			<properties>
+				<build.type>macosx-x86_64</build.type>
+			</properties>
+		</profile>
+		<profile>
+			<id>windows-x86_64</id>
+			<properties>
+				<build.type>windows-x86_64</build.type>
+			</properties>
+		</profile>
+	</profiles>
+
+</project>
